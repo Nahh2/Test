@@ -922,6 +922,9 @@ function OrionLib:MakeWindow(WindowConfig)
 			Config = TabConfig,
 			Container = nil
 		}
+		
+		-- Make sure the tab button is visible
+		TabFrame.Visible = true
 
 		-- Function to create the container when needed
 		local function CreateContainer()
@@ -934,7 +937,8 @@ function OrionLib:MakeWindow(WindowConfig)
 				Position = UDim2.new(0, 150, 0, 50),
 				Parent = MainWindow,
 				Visible = false,
-				Name = "ItemContainer"
+				Name = "ItemContainer",
+				BackgroundTransparency = 0 -- Ensure container is visible
 			}), {
 				MakeElement("List", 0, 6),
 				MakeElement("Padding", 15, 10, 10, 15)
@@ -965,6 +969,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			-- Don't reload if this tab is already active
 			if OrionLib.ActiveTab == ContainerId then return end
 
+			-- Reset all tabs to inactive state
 			for _, Tab in next, TabHolder:GetChildren() do
 				if Tab:IsA("TextButton") then
 					Tab.Title.Font = Enum.Font.GothamSemibold
@@ -972,6 +977,8 @@ function OrionLib:MakeWindow(WindowConfig)
 					TweenService:Create(Tab.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
 				end    
 			end
+			
+			-- Hide all containers
 			for _, ItemContainer in next, MainWindow:GetChildren() do
 				if ItemContainer.Name == "ItemContainer" then
 					ItemContainer.Visible = false
@@ -981,15 +988,30 @@ function OrionLib:MakeWindow(WindowConfig)
 			-- Lazy load the container if it hasn't been created yet
 			local Container = CreateContainer()
 			
+			-- Set this tab to active state
 			TweenService:Create(TabFrame.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
 			TweenService:Create(TabFrame.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 			TabFrame.Title.Font = Enum.Font.GothamBlack
+			
+			-- Make sure the container is visible and properly positioned
 			Container.Visible = true
+			Container.Position = UDim2.new(0, 150, 0, 50)
+			Container.Size = UDim2.new(1, -150, 1, -50)
+			Container.BackgroundTransparency = 1
+			
+			-- Update active tab reference
 			OrionLib.ActiveTab = ContainerId
 		end)
 
 		local function GetElements(ItemParent)
 			local ElementFunction = {}
+			
+			-- Ensure the parent container is properly set up
+			if ItemParent and not ItemParent.Visible and OrionLib.LazyLoadedTabs[ContainerId].Loaded then
+				-- This is a tab that's been loaded but isn't currently visible
+				-- Make sure elements will be properly displayed when tab is selected
+				ItemParent.CanvasSize = UDim2.new(0, 0, 0, 0) -- Reset canvas size
+			end
 			function ElementFunction:AddLabel(Text)
 				local LabelFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
 					Size = UDim2.new(1, 0, 0, 30),

@@ -546,9 +546,7 @@ function OrionLib:MakeNotification(NotificationConfig)
 				end)
 			})
 		})
-	end)Content, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
-				
-				task.delay(0.05, function()    
+	end)
 
 function OrionLib:Init()
 	if OrionLib.SaveCfg then	

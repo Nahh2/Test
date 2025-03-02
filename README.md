@@ -79,6 +79,15 @@ Callback = <function> - The function that gets called when the button is pressed
 #### Toggle
 
 ```lua
+--[[
+Parameters for AddToggle:
+Name = <string> - The name of the toggle.
+Default = <bool> - The default value of the toggle.
+Flag = <string> - The identifier for the configuration saving system.
+Save = <bool> - Determines if the toggle state should be saved.
+Callback = <function> - The function that gets called when the toggle is changed.
+]]
+
 MainTab:AddToggle({
     Name = "Toggle",
     Default = false,
@@ -89,13 +98,6 @@ MainTab:AddToggle({
     end
 })
 ```
-
---[[Parameters for AddToggle:
-Name = <string> - The name of the toggle.
-Default = <bool> - The default value of the toggle.
-Flag = <string> - The identifier for the configuration saving system.
-Save = <bool> - Determines if the toggle state should be saved.
-Callback = <function> - The function that gets called when the toggle is changed.]]
 
 #### Slider
 

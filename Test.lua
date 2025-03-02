@@ -938,7 +938,7 @@ function OrionLib:MakeWindow(WindowConfig)
 				Parent = MainWindow,
 				Visible = false,
 				Name = "ItemContainer",
-				BackgroundTransparency = 0 -- Ensure container is visible
+				BackgroundTransparency = 1 -- Make container transparent so elements are visible
 			}), {
 				MakeElement("List", 0, 6),
 				MakeElement("Padding", 15, 10, 10, 15)
@@ -997,10 +997,20 @@ function OrionLib:MakeWindow(WindowConfig)
 			Container.Visible = true
 			Container.Position = UDim2.new(0, 150, 0, 50)
 			Container.Size = UDim2.new(1, -150, 1, -50)
-			Container.BackgroundTransparency = 1
+			Container.BackgroundTransparency = 0 -- Keep container visible
 			
 			-- Update active tab reference
 			OrionLib.ActiveTab = ContainerId
+			
+			-- Ensure all elements in the container are visible
+			for _, Element in pairs(Container:GetChildren()) do
+				if Element:IsA("Frame") or Element:IsA("TextButton") or Element:IsA("TextLabel") or Element:IsA("ImageLabel") or Element:IsA("ImageButton") then
+					Element.Visible = true
+					if Element:FindFirstChild("Content") then
+						Element.Content.Visible = true
+					end
+				end
+			end
 		end)
 
 		local function GetElements(ItemParent)

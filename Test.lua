@@ -5,16 +5,14 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local HttpService = game:GetService("HttpService")
 
+-- Load the Localization Module
+local LocalizationModule = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Localization.lua')))() or require(script.Parent.Localization)
+
 local OrionLib = {
 	Elements = {},
 	ThemeObjects = {},
 	Connections = {},
 	Flags = {},
-	FontObjects = {}, -- Store objects that need font updates
-	AvailableFonts = {"Gotham", "GothamBold", "GothamBlack", "SourceSans", "SourceSansBold", "Ubuntu", "UbuntuBold", "Roboto", "RobotoBold", "Merriweather", "Arial", "ArialBold"},
-	SelectedFont = "Gotham",
-	MinWindowSize = {X = 450, Y = 300}, -- Minimum window size
-	MaxWindowSize = {X = 800, Y = 600}, -- Maximum window size
 	Themes = {
 		Default = {
 			Main = Color3.fromRGB(25, 25, 25),
@@ -49,7 +47,9 @@ local OrionLib = {
 	-- Performance optimization
 	ElementPool = {}, -- For element pooling
 	LazyLoadedTabs = {}, -- For lazy loading tabs
-	ActiveTab = nil -- Track the currently active tab
+	ActiveTab = nil, -- Track the currently active tab
+	-- Localization
+	Localization = LocalizationModule
 }
 
 --Feather Icons https://github.com/evoincorp/lucideblox/tree/master/src/modules/util - Created by 7kayoh
@@ -143,33 +143,17 @@ local function AddDraggingFunctionality(DragPoint, Main)
 	if not DragPoint or not Main then return end
 	
 	local success, error = pcall(function()
-		local Dragging, DragInput, MousePos, FramePos, StartSize = false, nil, nil, nil, nil
-		local IsResizing = false
-		local ResizeMargin = 5
-		
-		local function IsInResizeRange(X, Y)
-			local AbsSize = Main.AbsoluteSize
-			local AbsPos = Main.AbsolutePosition
-			return (X >= AbsPos.X + AbsSize.X - ResizeMargin) and (Y >= AbsPos.Y + AbsSize.Y - ResizeMargin)
-		end
-		
+		local Dragging, DragInput, MousePos, FramePos = false
 		local DragBeganConnection = DragPoint.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+				Dragging = true
 				MousePos = Input.Position
 				FramePos = Main.Position
-				StartSize = Main.Size
-				
-				if IsInResizeRange(MousePos.X, MousePos.Y) then
-					IsResizing = true
-				else
-					Dragging = true
-				end
 				
 				local InputChangedConnection = Input.Changed:Connect(function()
 					if Input.UserInputState == Enum.UserInputState.End then
 						Dragging = false
-						IsResizing = false
-					end
+				end
 				end)
 				
 				AddConnection(InputChangedConnection)
@@ -179,36 +163,13 @@ local function AddDraggingFunctionality(DragPoint, Main)
 		local DragChangedConnection = DragPoint.InputChanged:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseMovement then
 				DragInput = Input
-				
-				-- Update cursor based on position
-				if IsInResizeRange(Input.Position.X, Input.Position.Y) then
-					DragPoint.MouseIcon = "rbxasset://SystemCursors/SizeNWSE"
-				else
-					DragPoint.MouseIcon = ""
-				end
 			end
 		end)
 		
 		local UserInputChangedConnection = UserInputService.InputChanged:Connect(function(Input)
-			if Input == DragInput then
+			if Input == DragInput and Dragging then
 				local Delta = Input.Position - MousePos
-				
-				if IsResizing then
-					local NewWidth = StartSize.X.Offset + Delta.X
-					local NewHeight = StartSize.Y.Offset + Delta.Y
-					
-					-- Enforce minimum and maximum size constraints
-					NewWidth = math.clamp(NewWidth, OrionLib.MinWindowSize.X, OrionLib.MaxWindowSize.X)
-					NewHeight = math.clamp(NewHeight, OrionLib.MinWindowSize.Y, OrionLib.MaxWindowSize.Y)
-					
-					TweenService:Create(Main, TweenInfo.new(0.1), {
-						Size = UDim2.new(0, NewWidth, 0, NewHeight)
-					}):Play()
-				elseif Dragging then
-					TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-						Position = UDim2.new(FramePos.X.Scale, FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)
-					}):Play()
-				end
+				TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position  = UDim2.new(FramePos.X.Scale,FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)}):Play()
 			end
 		end)
 		
@@ -345,24 +306,6 @@ function OrionLib:SetTheme(ThemeName)
 	else
 		if self.DebugMode then
 			warn("Orion Library - Theme '" .. ThemeName .. "' does not exist!")
-		end
-		return false
-	end
-end
-
-function OrionLib:SetFont(FontName)
-	if table.find(self.AvailableFonts, FontName) then
-		self.SelectedFont = FontName
-		-- Update all text objects with new font
-		for _, Object in pairs(self.FontObjects) do
-			if Object:IsA("TextLabel") or Object:IsA("TextButton") or Object:IsA("TextBox") then
-				Object.Font = Enum.Font[FontName]
-			end
-		end
-		return true
-	else
-		if self.DebugMode then
-			warn("Orion Library - Font '" .. FontName .. "' is not available!")
 		end
 		return false
 	end
@@ -554,13 +497,11 @@ CreateElement("Label", function(Text, TextSize, Transparency)
 		TextColor3 = Color3.fromRGB(240, 240, 240),
 		TextTransparency = Transparency or 0,
 		TextSize = TextSize or 15,
-		Font = Enum.Font[OrionLib.SelectedFont],
+		Font = Enum.Font.Gotham,
 		RichText = true,
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left
 	})
-	-- Register for font updates
-	table.insert(OrionLib.FontObjects, Label)
 	return Label
 end)
 

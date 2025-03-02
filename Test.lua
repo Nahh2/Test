@@ -10,6 +10,11 @@ local OrionLib = {
 	ThemeObjects = {},
 	Connections = {},
 	Flags = {},
+	FontObjects = {}, -- Store objects that need font updates
+	AvailableFonts = {"Gotham", "GothamBold", "GothamBlack", "SourceSans", "SourceSansBold", "Ubuntu", "UbuntuBold", "Roboto", "RobotoBold", "Merriweather", "Arial", "ArialBold"},
+	SelectedFont = "Gotham",
+	MinWindowSize = {X = 450, Y = 300}, -- Minimum window size
+	MaxWindowSize = {X = 800, Y = 600}, -- Maximum window size
 	Themes = {
 		Default = {
 			Main = Color3.fromRGB(25, 25, 25),
@@ -40,7 +45,11 @@ local OrionLib = {
 	Folder = nil,
 	SaveCfg = false,
 	Version = "2.0.0",
-	DebugMode = false
+	DebugMode = false,
+	-- Performance optimization
+	ElementPool = {}, -- For element pooling
+	LazyLoadedTabs = {}, -- For lazy loading tabs
+	ActiveTab = nil -- Track the currently active tab
 }
 
 --Feather Icons https://github.com/evoincorp/lucideblox/tree/master/src/modules/util - Created by 7kayoh
@@ -134,17 +143,33 @@ local function AddDraggingFunctionality(DragPoint, Main)
 	if not DragPoint or not Main then return end
 	
 	local success, error = pcall(function()
-		local Dragging, DragInput, MousePos, FramePos = false
+		local Dragging, DragInput, MousePos, FramePos, StartSize = false, nil, nil, nil, nil
+		local IsResizing = false
+		local ResizeMargin = 5
+		
+		local function IsInResizeRange(X, Y)
+			local AbsSize = Main.AbsoluteSize
+			local AbsPos = Main.AbsolutePosition
+			return (X >= AbsPos.X + AbsSize.X - ResizeMargin) and (Y >= AbsPos.Y + AbsSize.Y - ResizeMargin)
+		end
+		
 		local DragBeganConnection = DragPoint.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-				Dragging = true
 				MousePos = Input.Position
 				FramePos = Main.Position
+				StartSize = Main.Size
+				
+				if IsInResizeRange(MousePos.X, MousePos.Y) then
+					IsResizing = true
+				else
+					Dragging = true
+				end
 				
 				local InputChangedConnection = Input.Changed:Connect(function()
 					if Input.UserInputState == Enum.UserInputState.End then
 						Dragging = false
-				end
+						IsResizing = false
+					end
 				end)
 				
 				AddConnection(InputChangedConnection)
@@ -154,13 +179,36 @@ local function AddDraggingFunctionality(DragPoint, Main)
 		local DragChangedConnection = DragPoint.InputChanged:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseMovement then
 				DragInput = Input
+				
+				-- Update cursor based on position
+				if IsInResizeRange(Input.Position.X, Input.Position.Y) then
+					DragPoint.MouseIcon = "rbxasset://SystemCursors/SizeNWSE"
+				else
+					DragPoint.MouseIcon = ""
+				end
 			end
 		end)
 		
 		local UserInputChangedConnection = UserInputService.InputChanged:Connect(function(Input)
-			if Input == DragInput and Dragging then
+			if Input == DragInput then
 				local Delta = Input.Position - MousePos
-				TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position  = UDim2.new(FramePos.X.Scale,FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)}):Play()
+				
+				if IsResizing then
+					local NewWidth = StartSize.X.Offset + Delta.X
+					local NewHeight = StartSize.Y.Offset + Delta.Y
+					
+					-- Enforce minimum and maximum size constraints
+					NewWidth = math.clamp(NewWidth, OrionLib.MinWindowSize.X, OrionLib.MaxWindowSize.X)
+					NewHeight = math.clamp(NewHeight, OrionLib.MinWindowSize.Y, OrionLib.MaxWindowSize.Y)
+					
+					TweenService:Create(Main, TweenInfo.new(0.1), {
+						Size = UDim2.new(0, NewWidth, 0, NewHeight)
+					}):Play()
+				elseif Dragging then
+					TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+						Position = UDim2.new(FramePos.X.Scale, FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)
+					}):Play()
+				end
 			end
 		end)
 		
@@ -192,8 +240,46 @@ local function CreateElement(ElementName, ElementFunction)
 end
 
 local function MakeElement(ElementName, ...)
-	local NewElement = OrionLib.Elements[ElementName](...)
+	-- Check if there's a pooled element available
+	if not OrionLib.ElementPool[ElementName] then
+		OrionLib.ElementPool[ElementName] = {}
+	end
+	
+	local pool = OrionLib.ElementPool[ElementName]
+	local NewElement
+	
+	-- Try to reuse an element from the pool
+	if #pool > 0 then
+		NewElement = table.remove(pool)
+		-- Reset properties as needed
+		if NewElement:IsA("TextLabel") or NewElement:IsA("TextButton") or NewElement:IsA("TextBox") then
+			NewElement.Text = ""
+		end
+		if NewElement:IsA("ImageLabel") or NewElement:IsA("ImageButton") then
+			NewElement.Image = ""
+		end
+		NewElement.Visible = true
+	else
+		-- Create a new element if none available in pool
+		NewElement = OrionLib.Elements[ElementName](...)
+	end
+	
 	return NewElement
+end
+
+-- Function to return elements to the pool when they're no longer needed
+local function RecycleElement(Element, ElementType)
+	if not Element then return end
+	
+	-- Hide the element
+	Element.Visible = false
+	
+	-- Add to appropriate pool
+	if not OrionLib.ElementPool[ElementType] then
+		OrionLib.ElementPool[ElementType] = {}
+	end
+	
+	table.insert(OrionLib.ElementPool[ElementType], Element)
 end
 
 local function SetProps(Element, Props)
@@ -259,6 +345,24 @@ function OrionLib:SetTheme(ThemeName)
 	else
 		if self.DebugMode then
 			warn("Orion Library - Theme '" .. ThemeName .. "' does not exist!")
+		end
+		return false
+	end
+end
+
+function OrionLib:SetFont(FontName)
+	if table.find(self.AvailableFonts, FontName) then
+		self.SelectedFont = FontName
+		-- Update all text objects with new font
+		for _, Object in pairs(self.FontObjects) do
+			if Object:IsA("TextLabel") or Object:IsA("TextButton") or Object:IsA("TextBox") then
+				Object.Font = Enum.Font[FontName]
+			end
+		end
+		return true
+	else
+		if self.DebugMode then
+			warn("Orion Library - Font '" .. FontName .. "' is not available!")
 		end
 		return false
 	end
@@ -450,11 +554,13 @@ CreateElement("Label", function(Text, TextSize, Transparency)
 		TextColor3 = Color3.fromRGB(240, 240, 240),
 		TextTransparency = Transparency or 0,
 		TextSize = TextSize or 15,
-		Font = Enum.Font.Gotham,
+		Font = Enum.Font[OrionLib.SelectedFont],
 		RichText = true,
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left
 	})
+	-- Register for font updates
+	table.insert(OrionLib.FontObjects, Label)
 	return Label
 end)
 
@@ -868,30 +974,56 @@ function OrionLib:MakeWindow(WindowConfig)
 			TabFrame.Ico.Image = GetIcon(TabConfig.Icon)
 		end	
 
-		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 5), {
-			Size = UDim2.new(1, -150, 1, -50),
-			Position = UDim2.new(0, 150, 0, 50),
-			Parent = MainWindow,
-			Visible = false,
-			Name = "ItemContainer"
-		}), {
-			MakeElement("List", 0, 6),
-			MakeElement("Padding", 15, 10, 10, 15)
-		}), "Divider")
+		-- Create a placeholder for the container that will be lazy loaded
+		local ContainerId = HttpService:GenerateGUID(false)
+		OrionLib.LazyLoadedTabs[ContainerId] = {
+			Loaded = false,
+			Config = TabConfig,
+			Container = nil
+		}
 
-		AddConnection(Container.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-			Container.CanvasSize = UDim2.new(0, 0, 0, Container.UIListLayout.AbsoluteContentSize.Y + 30)
-		end)
+		-- Function to create the container when needed
+		local function CreateContainer()
+			if OrionLib.LazyLoadedTabs[ContainerId].Loaded then
+				return OrionLib.LazyLoadedTabs[ContainerId].Container
+			end
 
+			local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 5), {
+				Size = UDim2.new(1, -150, 1, -50),
+				Position = UDim2.new(0, 150, 0, 50),
+				Parent = MainWindow,
+				Visible = false,
+				Name = "ItemContainer"
+			}), {
+				MakeElement("List", 0, 6),
+				MakeElement("Padding", 15, 10, 10, 15)
+			}), "Divider")
+
+			AddConnection(Container.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+				Container.CanvasSize = UDim2.new(0, 0, 0, Container.UIListLayout.AbsoluteContentSize.Y + 30)
+			end)
+
+			OrionLib.LazyLoadedTabs[ContainerId].Loaded = true
+			OrionLib.LazyLoadedTabs[ContainerId].Container = Container
+
+			return Container
+		end
+
+		-- Create container immediately for first tab, lazy load others
 		if FirstTab then
 			FirstTab = false
 			TabFrame.Ico.ImageTransparency = 0
 			TabFrame.Title.TextTransparency = 0
 			TabFrame.Title.Font = Enum.Font.GothamBlack
+			local Container = CreateContainer()
 			Container.Visible = true
+			OrionLib.ActiveTab = ContainerId
 		end    
 
 		AddConnection(TabFrame.MouseButton1Click, function()
+			-- Don't reload if this tab is already active
+			if OrionLib.ActiveTab == ContainerId then return end
+
 			for _, Tab in next, TabHolder:GetChildren() do
 				if Tab:IsA("TextButton") then
 					Tab.Title.Font = Enum.Font.GothamSemibold
@@ -904,10 +1036,15 @@ function OrionLib:MakeWindow(WindowConfig)
 					ItemContainer.Visible = false
 				end    
 			end  
+
+			-- Lazy load the container if it hasn't been created yet
+			local Container = CreateContainer()
+			
 			TweenService:Create(TabFrame.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
 			TweenService:Create(TabFrame.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 			TabFrame.Title.Font = Enum.Font.GothamBlack
-			Container.Visible = true   
+			Container.Visible = true
+			OrionLib.ActiveTab = ContainerId
 		end)
 
 		local function GetElements(ItemParent)
@@ -930,6 +1067,11 @@ function OrionLib:MakeWindow(WindowConfig)
 				local LabelFunction = {}
 				function LabelFunction:Set(ToChange)
 					LabelFrame.Content.Text = ToChange
+					
+					-- If text is empty, recycle the element
+					if ToChange == "" then
+						RecycleElement(LabelFrame, "RoundFrame")
+					end
 				end
 				return LabelFunction
 			end

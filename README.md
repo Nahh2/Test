@@ -253,13 +253,13 @@ None - This function doesn't take any parameters. It simply destroys the UI.]]
 ## Complete Example
 
 ```lua
--- Load the Orion Library
+// Load the Orion Library
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Test.lua')))()
 
--- Initialize the library
+// Initialize the library
 OrionLib:Init()
 
--- Create a window
+// Create a window
 local Window = OrionLib:MakeWindow({
     Name = "My Script",
     HidePremium = false,
@@ -269,14 +269,14 @@ local Window = OrionLib:MakeWindow({
     IntroText = "My Script"
 })
 
--- Create a tab
+// Create a tab
 local MainTab = Window:MakeTab({
     Name = "Main",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
 
--- Add elements to the tab
+// Add elements to the tab
 MainTab:AddLabel("Welcome to my script!")
 
 MainTab:AddButton({
@@ -301,7 +301,7 @@ MainTab:AddToggle({
     end
 })
 
--- Keep the script running
+// Keep the script running
 while true do
     wait(1)
     -- Your periodic checks or updates here
@@ -311,3 +311,49 @@ end
 ## Version
 
 Current version: 2.0.0
+
+# Orion Library
+## Localization
+### Multi-language Support
+
+Orion Library now supports multiple languages through its localization system. You can load different language packs and switch between them dynamically.
+
+```lua
+-- Get available languages
+local availableLanguages = OrionLib.Localization:GetAvailableLanguages()
+
+-- Set a specific language
+OrionLib.Localization:SetLanguage("Spanish")
+
+-- Get localized text
+local buttonText = OrionLib.Localization:GetText("Elements", "Button")
+
+-- Register a UI element for automatic text updates when language changes
+local myLabel = Tab:AddLabel("Button")
+OrionLib.Localization:RegisterTextElement(myLabel, "Elements", "Button")
+
+-- Add a custom language
+local customLanguage = {
+    Window = {
+        DefaultTitle = "My Custom Title",
+        -- Add more translations here
+    },
+    Elements = {
+        Button = "My Button",
+        Toggle = "My Toggle",
+        -- Add more translations here
+    }
+    -- Add more categories as needed
+}
+
+OrionLib.Localization:AddLanguage("MyLanguage", customLanguage)
+```
+
+--[[Parameters for Localization functions:
+GetAvailableLanguages() - Returns a table of available language names.
+SetLanguage(languageName) - Sets the current language. Returns true if successful.
+GetText(category, key) - Gets localized text for the specified category and key.
+RegisterTextElement(element, category, key, [formatFunc]) - Registers a UI element for automatic updates.
+AddLanguage(languageName, languagePack) - Adds a new language. Returns true if successful.
+LoadLanguageFromFile(languageName, filePath) - Loads a language pack from a JSON file.
+SaveLanguageToFile(languageName, filePath) - Saves a language pack to a JSON file.]]

@@ -5,9 +5,6 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local HttpService = game:GetService("HttpService")
 
--- Load the Localization Module
-local LocalizationModule = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Localization.lua')))() or require(script.Parent.Localization)
-
 local OrionLib = {
 	Elements = {},
 	ThemeObjects = {},
@@ -47,9 +44,7 @@ local OrionLib = {
 	-- Performance optimization
 	ElementPool = {}, -- For element pooling
 	LazyLoadedTabs = {}, -- For lazy loading tabs
-	ActiveTab = nil, -- Track the currently active tab
-	-- Localization
-	Localization = LocalizationModule
+	ActiveTab = nil -- Track the currently active tab
 }
 
 --Feather Icons https://github.com/evoincorp/lucideblox/tree/master/src/modules/util - Created by 7kayoh
@@ -922,9 +917,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			Config = TabConfig,
 			Container = nil
 		}
-		
-		-- Make sure the tab button is visible
-		TabFrame.Visible = true
 
 		-- Function to create the container when needed
 		local function CreateContainer()
@@ -937,8 +929,7 @@ function OrionLib:MakeWindow(WindowConfig)
 				Position = UDim2.new(0, 150, 0, 50),
 				Parent = MainWindow,
 				Visible = false,
-				Name = "ItemContainer",
-				BackgroundTransparency = 1 -- Make container transparent so elements are visible
+				Name = "ItemContainer"
 			}), {
 				MakeElement("List", 0, 6),
 				MakeElement("Padding", 15, 10, 10, 15)
@@ -969,7 +960,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			-- Don't reload if this tab is already active
 			if OrionLib.ActiveTab == ContainerId then return end
 
-			-- Reset all tabs to inactive state
 			for _, Tab in next, TabHolder:GetChildren() do
 				if Tab:IsA("TextButton") then
 					Tab.Title.Font = Enum.Font.GothamSemibold
@@ -977,8 +967,6 @@ function OrionLib:MakeWindow(WindowConfig)
 					TweenService:Create(Tab.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
 				end    
 			end
-			
-			-- Hide all containers
 			for _, ItemContainer in next, MainWindow:GetChildren() do
 				if ItemContainer.Name == "ItemContainer" then
 					ItemContainer.Visible = false
@@ -988,40 +976,15 @@ function OrionLib:MakeWindow(WindowConfig)
 			-- Lazy load the container if it hasn't been created yet
 			local Container = CreateContainer()
 			
-			-- Set this tab to active state
 			TweenService:Create(TabFrame.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
 			TweenService:Create(TabFrame.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 			TabFrame.Title.Font = Enum.Font.GothamBlack
-			
-			-- Make sure the container is visible and properly positioned
 			Container.Visible = true
-			Container.Position = UDim2.new(0, 150, 0, 50)
-			Container.Size = UDim2.new(1, -150, 1, -50)
-			Container.BackgroundTransparency = 1 -- Keep container transparent so elements are visible
-			
-			-- Update active tab reference
 			OrionLib.ActiveTab = ContainerId
-			
-			-- Ensure all elements in the container are visible
-			for _, Element in pairs(Container:GetChildren()) do
-				if Element:IsA("Frame") or Element:IsA("TextButton") or Element:IsA("TextLabel") or Element:IsA("ImageLabel") or Element:IsA("ImageButton") then
-					Element.Visible = true
-					if Element:FindFirstChild("Content") then
-						Element.Content.Visible = true
-					end
-				end
-			end
 		end)
 
 		local function GetElements(ItemParent)
 			local ElementFunction = {}
-			
-			-- Ensure the parent container is properly set up
-			if ItemParent and not ItemParent.Visible and OrionLib.LazyLoadedTabs[ContainerId].Loaded then
-				-- This is a tab that's been loaded but isn't currently visible
-				-- Make sure elements will be properly displayed when tab is selected
-				ItemParent.CanvasSize = UDim2.new(0, 0, 0, 0) -- Reset canvas size
-			end
 			function ElementFunction:AddLabel(Text)
 				local LabelFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
 					Size = UDim2.new(1, 0, 0, 30),

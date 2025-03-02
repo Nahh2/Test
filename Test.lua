@@ -544,9 +544,10 @@ function OrionLib:MakeNotification(NotificationConfig)
 						end
 					end)
 				end)
-			})
-		})
+			end)
+		end)
 	end)
+end
 
 function OrionLib:Init()
 	if OrionLib.SaveCfg then	

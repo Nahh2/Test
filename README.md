@@ -13,7 +13,7 @@ A powerful and customizable UI library for Roblox exploits with performance opti
 ## Installation
 
 ```lua
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Test.lua')))() 
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Test.lua')))()
 ```
 
 ## Basic Usage
@@ -45,14 +45,24 @@ local MainTab = Window:MakeTab({
 })
 ```
 
+--[[Parameters for MakeTab:
+Name = <string> - The name of the tab.
+Icon = <string> - The icon of the tab.
+PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.]]
+
 ### Adding UI Elements
 
 #### Label
+
 ```lua
 MainTab:AddLabel("This is a label")
 ```
 
+--[[Parameters for AddLabel:
+Text = <string> - The text to display on the label.]]
+
 #### Button
+
 ```lua
 MainTab:AddButton({
     Name = "Button",
@@ -62,7 +72,12 @@ MainTab:AddButton({
 })
 ```
 
+--[[Parameters for AddButton:
+Name = <string> - The name/text of the button.
+Callback = <function> - The function that gets called when the button is pressed.]]
+
 #### Toggle
+
 ```lua
 MainTab:AddToggle({
     Name = "Toggle",
@@ -75,7 +90,15 @@ MainTab:AddToggle({
 })
 ```
 
+--[[Parameters for AddToggle:
+Name = <string> - The name of the toggle.
+Default = <bool> - The default value of the toggle.
+Flag = <string> - The identifier for the configuration saving system.
+Save = <bool> - Determines if the toggle state should be saved.
+Callback = <function> - The function that gets called when the toggle is changed.]]
+
 #### Slider
+
 ```lua
 MainTab:AddSlider({
     Name = "Slider",
@@ -93,7 +116,20 @@ MainTab:AddSlider({
 })
 ```
 
+--[[Parameters for AddSlider:
+Name = <string> - The name of the slider.
+Min = <number> - The minimum value of the slider.
+Max = <number> - The maximum value of the slider.
+Default = <number> - The default value of the slider.
+Color = <Color3> - The color of the slider.
+Increment = <number> - How much the slider will change value when dragged.
+ValueName = <string> - The text after the value number.
+Flag = <string> - The identifier for the configuration saving system.
+Save = <bool> - Determines if the slider value should be saved.
+Callback = <function> - The function that gets called when the slider value changes.]]
+
 #### Dropdown
+
 ```lua
 MainTab:AddDropdown({
     Name = "Dropdown",
@@ -107,7 +143,16 @@ MainTab:AddDropdown({
 })
 ```
 
+--[[Parameters for AddDropdown:
+Name = <string> - The name of the dropdown.
+Default = <string> - The default value of the dropdown.
+Options = <table> - The available options in the dropdown.
+Flag = <string> - The identifier for the configuration saving system.
+Save = <bool> - Determines if the dropdown value should be saved.
+Callback = <function> - The function that gets called when an option is selected.]]
+
 #### Colorpicker
+
 ```lua
 MainTab:AddColorpicker({
     Name = "Colorpicker",
@@ -120,10 +165,22 @@ MainTab:AddColorpicker({
 })
 ```
 
+--[[Parameters for AddColorpicker:
+Name = <string> - The name of the colorpicker.
+Default = <Color3> - The default color of the colorpicker.
+Flag = <string> - The identifier for the configuration saving system.
+Save = <bool> - Determines if the selected color should be saved.
+Callback = <function> - The function that gets called when a color is selected.]]
+
 #### Paragraph
+
 ```lua
 MainTab:AddParagraph("Title", "This is the content of the paragraph")
 ```
+
+--[[Parameters for AddParagraph:
+Title = <string> - The title of the paragraph.
+Content = <string> - The content of the paragraph.]]
 
 ## Notifications
 
@@ -135,6 +192,12 @@ OrionLib:MakeNotification({
     Time = 5
 })
 ```
+
+--[[Parameters for MakeNotification:
+Name = <string> - The title of the notification.
+Content = <string> - The content of the notification.
+Image = <string> - The icon of the notification.
+Time = <number> - How long the notification should remain visible (in seconds).]]
 
 ## Themes
 
@@ -156,6 +219,7 @@ Tabs are now lazy loaded, meaning their contents are only created when you click
 UI elements are reused instead of being created and destroyed repeatedly. This reduces memory usage and improves performance by minimizing garbage collection.
 
 Example of element recycling:
+
 ```lua
 local label = Tab:AddLabel("My Label")
 
@@ -181,11 +245,14 @@ local Window = OrionLib:MakeWindow({
 OrionLib:Destroy()
 ```
 
+--[[Parameters for Destroy:
+None - This function doesn't take any parameters. It simply destroys the UI.]]
+
 ## Complete Example
 
 ```lua
 -- Load the Orion Library
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Test.lua')))() 
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Nahh2/Test/refs/heads/main/Test.lua')))()
 
 -- Initialize the library
 OrionLib:Init()

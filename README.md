@@ -43,12 +43,12 @@ local MainTab = Window:MakeTab({
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
-```
 
 --[[Parameters for MakeTab:
 Name = <string> - The name of the tab.
 Icon = <string> - The icon of the tab.
 PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.]]
+```
 
 ### Adding UI Elements
 
@@ -56,10 +56,10 @@ PremiumOnly = <bool> - Makes the tab accessible to Sirus Premium users only.]]
 
 ```lua
 MainTab:AddLabel("This is a label")
-```
 
 --[[Parameters for AddLabel:
 Text = <string> - The text to display on the label.]]
+```
 
 #### Button
 
@@ -70,24 +70,15 @@ MainTab:AddButton({
         print("Button clicked")
     end
 })
-```
 
 --[[Parameters for AddButton:
 Name = <string> - The name/text of the button.
 Callback = <function> - The function that gets called when the button is pressed.]]
+```
 
 #### Toggle
 
 ```lua
---[[
-Parameters for AddToggle:
-Name = <string> - The name of the toggle.
-Default = <bool> - The default value of the toggle.
-Flag = <string> - The identifier for the configuration saving system.
-Save = <bool> - Determines if the toggle state should be saved.
-Callback = <function> - The function that gets called when the toggle is changed.
-]]
-
 MainTab:AddToggle({
     Name = "Toggle",
     Default = false,
@@ -97,6 +88,15 @@ MainTab:AddToggle({
         print("Toggle value:", Value)
     end
 })
+
+--[[
+Parameters for AddToggle:
+Name = <string> - The name of the toggle.
+Default = <bool> - The default value of the toggle.
+Flag = <string> - The identifier for the configuration saving system.
+Save = <bool> - Determines if the toggle state should be saved.
+Callback = <function> - The function that gets called when the toggle is changed.
+]]
 ```
 
 #### Slider
@@ -116,7 +116,6 @@ MainTab:AddSlider({
         print("Slider value:", Value)
     end
 })
-```
 
 --[[Parameters for AddSlider:
 Name = <string> - The name of the slider.
@@ -129,6 +128,7 @@ ValueName = <string> - The text after the value number.
 Flag = <string> - The identifier for the configuration saving system.
 Save = <bool> - Determines if the slider value should be saved.
 Callback = <function> - The function that gets called when the slider value changes.]]
+```
 
 #### Dropdown
 
@@ -143,7 +143,6 @@ MainTab:AddDropdown({
         print("Selected option:", Option)
     end
 })
-```
 
 --[[Parameters for AddDropdown:
 Name = <string> - The name of the dropdown.
@@ -152,6 +151,7 @@ Options = <table> - The available options in the dropdown.
 Flag = <string> - The identifier for the configuration saving system.
 Save = <bool> - Determines if the dropdown value should be saved.
 Callback = <function> - The function that gets called when an option is selected.]]
+```
 
 #### Colorpicker
 
@@ -165,7 +165,6 @@ MainTab:AddColorpicker({
         print("Selected color:", Color)
     end
 })
-```
 
 --[[Parameters for AddColorpicker:
 Name = <string> - The name of the colorpicker.
@@ -173,16 +172,17 @@ Default = <Color3> - The default color of the colorpicker.
 Flag = <string> - The identifier for the configuration saving system.
 Save = <bool> - Determines if the selected color should be saved.
 Callback = <function> - The function that gets called when a color is selected.]]
+```
 
 #### Paragraph
 
 ```lua
 MainTab:AddParagraph("Title", "This is the content of the paragraph")
-```
 
 --[[Parameters for AddParagraph:
 Title = <string> - The title of the paragraph.
 Content = <string> - The content of the paragraph.]]
+```
 
 ## Notifications
 
@@ -193,13 +193,13 @@ OrionLib:MakeNotification({
     Image = "rbxassetid://4483345998",
     Time = 5
 })
-```
 
 --[[Parameters for MakeNotification:
 Name = <string> - The title of the notification.
 Content = <string> - The content of the notification.
 Image = <string> - The icon of the notification.
 Time = <number> - How long the notification should remain visible (in seconds).]]
+```
 
 ## Themes
 
@@ -245,10 +245,10 @@ local Window = OrionLib:MakeWindow({
 
 ```lua
 OrionLib:Destroy()
-```
 
 --[[Parameters for Destroy:
 None - This function doesn't take any parameters. It simply destroys the UI.]]
+```
 
 ## Complete Example
 

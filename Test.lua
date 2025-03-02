@@ -997,7 +997,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			Container.Visible = true
 			Container.Position = UDim2.new(0, 150, 0, 50)
 			Container.Size = UDim2.new(1, -150, 1, -50)
-			Container.BackgroundTransparency = 0 -- Keep container visible
+			Container.BackgroundTransparency = 1 -- Keep container transparent so elements are visible
 			
 			-- Update active tab reference
 			OrionLib.ActiveTab = ContainerId

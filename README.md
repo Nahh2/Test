@@ -24,6 +24,7 @@ Here's an improved version of your Documentation.md with better structure, clari
 8. [Configuration Saving](#saving-configurations)
 9. [Destroying the UI](#destroying-the-interface)
 ```
+
 ---   
 
 ## Booting the Library

@@ -18,6 +18,22 @@ local OrionLib = {
 			Divider = Color3.fromRGB(60, 60, 60),
 			Text = Color3.fromRGB(240, 240, 240),
 			TextDark = Color3.fromRGB(150, 150, 150)
+		},
+		Neo = {
+			Main = Color3.fromRGB(20, 20, 30),
+			Second = Color3.fromRGB(30, 30, 45),
+			Stroke = Color3.fromRGB(65, 65, 85),
+			Divider = Color3.fromRGB(65, 65, 85),
+			Text = Color3.fromRGB(240, 240, 255),
+			TextDark = Color3.fromRGB(150, 150, 170)
+		},
+		BlueSky = {
+			Main = Color3.fromRGB(35, 60, 85),
+			Second = Color3.fromRGB(45, 70, 100),
+			Stroke = Color3.fromRGB(70, 95, 120),
+			Divider = Color3.fromRGB(70, 95, 120),
+			Text = Color3.fromRGB(240, 245, 255),
+			TextDark = Color3.fromRGB(160, 175, 195)
 		}
 	},
 	SelectedTheme = "Default",
@@ -194,12 +210,16 @@ local function AddThemeObject(Object, Type)
 	return Object
 end    
 
-local function SetTheme()
+function OrionLib:SetTheme()
 	for Name, Type in pairs(OrionLib.ThemeObjects) do
 		for _, Object in pairs(Type) do
 			Object[ReturnProperty(Object)] = OrionLib.Themes[OrionLib.SelectedTheme][Name]
 		end    
 	end    
+end
+
+local function SetTheme()
+	OrionLib:SetTheme()
 end
 
 local function PackColor(Color)

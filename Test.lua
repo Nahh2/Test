@@ -1,5 +1,3 @@
-
-
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -27,10 +25,6 @@ local OrionLib = {
 	SaveCfg = false
 }
 
---[[
-UI Utility Functions
-Contains core UI creation and management functions
-]]
 --Feather Icons https://github.com/evoincorp/lucideblox/tree/master/src/modules/util - Created by 7kayoh
 local Icons = {}
 
@@ -91,7 +85,7 @@ local function AddConnection(Signal, Function)
 	return SignalConnect
 end
 
-task.coroutine.wrap(function()
+task.spawn(function()
 	while (OrionLib:IsRunning()) do
 		wait()
 	end
@@ -142,11 +136,6 @@ local function Create(Name, Properties, Children)
 	return Object
 end
 
---[[
-Creates a new UI element template
-@param ElementName string - Unique identifier for the element type
-@param ElementFunction function - Constructor function for the element
-]]
 local function CreateElement(ElementName, ElementFunction)
 	OrionLib.Elements[ElementName] = function(...)
 		return ElementFunction(...)
@@ -197,32 +186,20 @@ local function ReturnProperty(Object)
 end
 
 local function AddThemeObject(Object, Type)
-	ThemeManagerInstance:Register(Type, {
-		[Type] = OrionLib.Themes[OrionLib.SelectedTheme][Type]
-	})
+	if not OrionLib.ThemeObjects[Type] then
+		OrionLib.ThemeObjects[Type] = {}
+	end    
+	table.insert(OrionLib.ThemeObjects[Type], Object)
 	Object[ReturnProperty(Object)] = OrionLib.Themes[OrionLib.SelectedTheme][Type]
 	return Object
 end    
 
---[[
-Applies current theme to all registered UI elements
-Validates theme structure and handles property updates
-]]
-local ThemeManager = require(Orion.Modules.ThemeManager)
-
-local ThemeManagerInstance = ThemeManager.new()
-
 local function SetTheme()
-	ThemeManagerInstance:Apply(OrionLib.SelectedTheme)
-end
-
--- Backwards compatibility functions
-function OrionLib:RegisterTheme(name, themeData)
-	ThemeManagerInstance:Register(name, themeData)
-end
-
-function OrionLib:SetThemeVariant(variantName)
-	ThemeManagerInstance:Apply(OrionLib.SelectedTheme, variantName)
+	for Name, Type in pairs(OrionLib.ThemeObjects) do
+		for _, Object in pairs(Type) do
+			Object[ReturnProperty(Object)] = OrionLib.Themes[OrionLib.SelectedTheme][Name]
+		end    
+	end    
 end
 
 local function PackColor(Color)
@@ -237,7 +214,7 @@ local function LoadCfg(Config)
 	local Data = HttpService:JSONDecode(Config)
 	table.foreach(Data, function(a,b)
 		if OrionLib.Flags[a] then
-			coroutine.wrap(function() 
+			spawn(function() 
 				if OrionLib.Flags[a].Type == "Colorpicker" then
 					OrionLib.Flags[a]:Set(UnpackColor(b))
 				else
@@ -386,7 +363,7 @@ CreateElement("Label", function(Text, TextSize, Transparency)
 		TextColor3 = Color3.fromRGB(240, 240, 240),
 		TextTransparency = Transparency or 0,
 		TextSize = TextSize or 15,
-		Font = Enum.Font.Gotham,
+		Font = Enum.Font.SourceSans, -- Changed from Gotham to SourceSans for better emoji support
 		RichText = true,
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left
@@ -409,7 +386,7 @@ local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
 })
 
 function OrionLib:MakeNotification(NotificationConfig)
-	coroutine.wrap(function()
+	spawn(function()
 		NotificationConfig.Name = NotificationConfig.Name or "Notification"
 		NotificationConfig.Content = NotificationConfig.Content or "Test"
 		NotificationConfig.Image = NotificationConfig.Image or "rbxassetid://4384403532"
@@ -454,18 +431,17 @@ function OrionLib:MakeNotification(NotificationConfig)
 
 		TweenService:Create(NotificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 0, 0, 0)}):Play()
 
-		task.wait(NotificationConfig.Time - 0.88)
+		wait(NotificationConfig.Time - 0.88)
 		TweenService:Create(NotificationFrame.Icon, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
 		TweenService:Create(NotificationFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.6}):Play()
-		task.wait(0.3)
+		wait(0.3)
 		TweenService:Create(NotificationFrame.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {Transparency = 0.9}):Play()
 		TweenService:Create(NotificationFrame.Title, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.4}):Play()
 		TweenService:Create(NotificationFrame.Content, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
-		task.wait(0.05)
+		wait(0.05)
 
-		local notificationTween = TweenService:Create(NotificationFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 0, 0)})
-		notificationTween:Play()
-		notificationTween.Completed:Wait()
+		NotificationFrame:TweenPosition(UDim2.new(1, 20, 0, 0),'In','Quint',0.8,true)
+		wait(1.35)
 		NotificationFrame:Destroy()
 	end)
 end    
@@ -485,13 +461,6 @@ function OrionLib:Init()
 	end	
 end	
 
---[[
-Creates main library window with configuration handling
-@param WindowConfig table - Configuration table with optional fields:
- Name (string), ConfigFolder (string), SaveConfig (bool),
- HidePremium (bool), Intro* properties, Callbacks
-@return Window object
-]]
 function OrionLib:MakeWindow(WindowConfig)
 	local FirstTab = true
 	local Minimized = false
@@ -500,7 +469,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 	WindowConfig = WindowConfig or {}
 	WindowConfig.Name = WindowConfig.Name or "Orion Library"
-	assert(type(WindowConfig.Name) == "string", "Window name must be a string")
 	WindowConfig.ConfigFolder = WindowConfig.ConfigFolder or WindowConfig.Name
 	WindowConfig.SaveConfig = WindowConfig.SaveConfig or false
 	WindowConfig.HidePremium = WindowConfig.HidePremium or false
@@ -509,7 +477,6 @@ function OrionLib:MakeWindow(WindowConfig)
 	end
 	WindowConfig.IntroText = WindowConfig.IntroText or "Orion Library"
 	WindowConfig.CloseCallback = WindowConfig.CloseCallback or function() end
-	assert(type(WindowConfig.CloseCallback) == "function", "CloseCallback must be a function")
 	WindowConfig.ShowIcon = WindowConfig.ShowIcon or false
 	WindowConfig.Icon = WindowConfig.Icon or "rbxassetid://8834748103"
 	WindowConfig.IntroIcon = WindowConfig.IntroIcon or "rbxassetid://8834748103"
@@ -522,8 +489,35 @@ function OrionLib:MakeWindow(WindowConfig)
 		end	
 	end
 
+	-- Create search bar for the sidebar
+	local SearchBar = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 6), {
+		Size = UDim2.new(1, -20, 0, 30),
+		Position = UDim2.new(0, 10, 0, 10),
+	}), {
+		AddThemeObject(MakeElement("Stroke"), "Stroke"),
+		AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://7072706796"), { -- Search icon
+			Size = UDim2.new(0, 14, 0, 14),
+			Position = UDim2.new(0, 8, 0, 8),
+		}), "Text"),
+		AddThemeObject(SetProps(Create("TextBox", {
+			Text = "",
+			PlaceholderText = "Search...",
+			Font = Enum.Font.SourceSans,
+			TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -35, 1, 0),
+			Position = UDim2.new(0, 30, 0, 0),
+			ClipsDescendants = true,
+			Name = "Input"
+		}), {
+			MakeElement("Padding", 0, 0, 0, 0)
+		}), "Text")
+	}), "Second")
+
 	local TabHolder = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 4), {
-		Size = UDim2.new(1, 0, 1, -50)
+		Size = UDim2.new(1, 0, 1, -90), -- Reduced size to make room for search bar
+		Position = UDim2.new(0, 0, 0, 50) -- Positioned below search bar
 	}), {
 		MakeElement("List"),
 		MakeElement("Padding", 8, 0, 0, 8)
@@ -531,6 +525,23 @@ function OrionLib:MakeWindow(WindowConfig)
 
 	AddConnection(TabHolder.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
 		TabHolder.CanvasSize = UDim2.new(0, 0, 0, TabHolder.UIListLayout.AbsoluteContentSize.Y + 16)
+	end)
+
+	-- Add search functionality
+	AddConnection(SearchBar.Input.Changed, function(prop)
+		if prop == "Text" then
+			local searchText = string.lower(SearchBar.Input.Text)
+			for _, tab in pairs(TabHolder:GetChildren()) do
+				if tab:IsA("TextButton") then
+					if searchText == "" then
+						tab.Visible = true
+					else
+						local tabName = string.lower(tab.Title.Text)
+						tab.Visible = string.find(tabName, searchText) ~= nil
+					end
+				end
+			end
+		end
 	end)
 
 	local CloseBtn = SetChildren(SetProps(MakeElement("Button"), {
@@ -575,6 +586,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			Size = UDim2.new(0, 1, 1, 0),
 			Position = UDim2.new(1, -1, 0, 0)
 		}), "Stroke"), 
+		SearchBar,
 		TabHolder,
 		SetChildren(SetProps(MakeElement("TFrame"), {
 			Size = UDim2.new(1, 0, 0, 50),
@@ -607,13 +619,14 @@ function OrionLib:MakeWindow(WindowConfig)
 			AddThemeObject(SetProps(MakeElement("Label", LocalPlayer.DisplayName, WindowConfig.HidePremium and 14 or 13), {
 				Size = UDim2.new(1, -60, 0, 13),
 				Position = WindowConfig.HidePremium and UDim2.new(0, 50, 0, 19) or UDim2.new(0, 50, 0, 12),
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.SourceSansBold, -- Changed from GothamBold to SourceSansBold for emoji support
 				ClipsDescendants = true
 			}), "Text"),
 			AddThemeObject(SetProps(MakeElement("Label", "", 12), {
 				Size = UDim2.new(1, -60, 0, 12),
 				Position = UDim2.new(0, 50, 1, -25),
-				Visible = not WindowConfig.HidePremium
+				Visible = not WindowConfig.HidePremium,
+				Font = Enum.Font.SourceSans -- Changed for emoji support
 			}), "TextDark")
 		}),
 	}), "Second")
@@ -621,7 +634,7 @@ function OrionLib:MakeWindow(WindowConfig)
 	local WindowName = AddThemeObject(SetProps(MakeElement("Label", WindowConfig.Name, 14), {
 		Size = UDim2.new(1, -30, 2, 0),
 		Position = UDim2.new(0, 25, 0, -24),
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.SourceSansBold, -- Changed from GothamBlack to SourceSansBold for emoji support
 		TextSize = 20
 	}), "Text")
 
@@ -738,7 +751,7 @@ function OrionLib:MakeWindow(WindowConfig)
 		TweenService:Create(LoadSequenceLogo, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageTransparency = 0, Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
 		wait(0.8)
 		TweenService:Create(LoadSequenceLogo, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -(LoadSequenceText.TextBounds.X/2), 0.5, 0)}):Play()
-		task.wait(0.3)
+		wait(0.3)
 		TweenService:Create(LoadSequenceText, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 		wait(2)
 		TweenService:Create(LoadSequenceText, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
@@ -801,14 +814,14 @@ function OrionLib:MakeWindow(WindowConfig)
 			FirstTab = false
 			TabFrame.Ico.ImageTransparency = 0
 			TabFrame.Title.TextTransparency = 0
-			TabFrame.Title.Font = Enum.Font.GothamBlack
+			TabFrame.Title.Font = Enum.Font.SourceSansBold -- Changed from GothamBlack to SourceSansBold for emoji support
 			Container.Visible = true
 		end    
 
 		AddConnection(TabFrame.MouseButton1Click, function()
 			for _, Tab in next, TabHolder:GetChildren() do
 				if Tab:IsA("TextButton") then
-					Tab.Title.Font = Enum.Font.GothamSemibold
+					Tab.Title.Font = Enum.Font.SourceSans -- Changed from GothamSemibold to SourceSans for emoji support
 					TweenService:Create(Tab.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0.4}):Play()
 					TweenService:Create(Tab.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0.4}):Play()
 				end    
@@ -820,7 +833,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end  
 			TweenService:Create(TabFrame.Ico, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
 			TweenService:Create(TabFrame.Title, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-			TabFrame.Title.Font = Enum.Font.GothamBlack
+			TabFrame.Title.Font = Enum.Font.SourceSansBold -- Changed from GothamBlack to SourceSansBold for emoji support
 			Container.Visible = true   
 		end)
 
@@ -925,7 +938,7 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Up, function()
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					coroutine.wrap(function()
+					spawn(function()
 						ButtonConfig.Callback()
 					end)
 				end)
@@ -1411,7 +1424,7 @@ function OrionLib:MakeWindow(WindowConfig)
 					TextColor3 = Color3.fromRGB(255, 255, 255),
 					PlaceholderColor3 = Color3.fromRGB(210,210,210),
 					PlaceholderText = "Input",
-					Font = Enum.Font.GothamSemibold,
+					Font = Enum.Font.SourceSans, -- Changed from GothamSemibold to SourceSans for better emoji support
 					TextXAlignment = Enum.TextXAlignment.Center,
 					TextSize = 14,
 					ClearTextOnFocus = false
